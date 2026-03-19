@@ -46,10 +46,12 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 - No reading 8 files at session start — slate + blob tops replace it
 
 ### Skills
+- `/context-load` — trail-based startup briefing; starts session record in DB
 - `/sprint` — claim ticket → work it → post result → surface next
+- `/workstep` — full work loop: orient → plan → implement → close; plan approval gate
+- `/decided` — close-out ritual: record decision → accumulate to session record → verify tests → next
 - `/commit` — full cycle: tests → audit → stage specific files → commit → pull → push
-- `/decided` — close-out ritual: record decision → update ticket → verify tests → next
-- `/context-load` — trail-based startup briefing
+- `/day-close` — end-of-day: sync docs DB, render views, update GitHub discussion, commit docs
 - Domain skills extend these — bind the infrastructure to the problem domain
 
 ### Workflow
@@ -71,10 +73,40 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 channel/        Shared JSONL channel — post/read/listen, no server required
 db/             db_proxy — unified DB access, SQLite/Postgres shim, timing
 web/            Standalone web server — channel WebSocket, health, file endpoints
-skills/         Claude Code slash skills — sprint, commit, decided, context-load
+skills/         Claude Code slash skills — context-load, sprint, workstep, decided, commit, day-close
 claudecode/     Claude Code integration helpers
-docs/           Framework documentation (English, maintained periodically)
+  session_manager.py   Crash-safe session accumulation in Postgres
+  decision_manager.py  Atomic decision recording — DB + log in one call
+  slate_manager.py     Slate CRUD + horizon cascade + render to ~/.channel/slate.md
+  github_sync.py       Pull GitHub issues into Postgres for planning
+  cc_queue.py          Ticket queue — list, start, done, add
+docs/           Human-readable documentation
+  getting_started.md   Prerequisites, setup, minimum viable config
+  crash_safe_sessions.md  Before/after crash recovery pattern
+  slate_workflow.md    Horizon cascade, daily flow, adopted bugs
+  skills_guide.md      All 6 skills explained + daily sequence
 ```
+
+---
+
+## Crash-Safe Sessions
+
+The traditional "savestate at end of session" pattern fails exactly when you need it most —
+machine lockup, stuck modifier keys, Claude Code running out of context.
+
+The new pattern accumulates state throughout the session:
+
+```
+/context-load     → session record created in DB immediately
+  /decided        → each decision written to DB atomically
+  /workstep gate  → loop state written at each phase transition
+/day-close        → synthesizes next/in-flight; renders views; commits
+```
+
+A crash loses only two synthesis fields (`next_session` + `in_flight`) — the prediction
+about the future that only a live Claude can provide. Everything else survives.
+
+See `docs/crash_safe_sessions.md` for the full pattern.
 
 ---
 
@@ -86,6 +118,28 @@ docs/           Framework documentation (English, maintained periodically)
 4. **Blob tops are enough** — newest-first + read until sufficient = fast, focused context
 5. **Trails, not snapshots** — temporal sequences of activity are the indexing mechanism
 6. **Human at every checkpoint** — automation works between touchpoints, never past them
+7. **Crash-safe by default** — every unit of work writes to DB before it closes; session record accumulates throughout; finalize adds synthesis only
+
+---
+
+## Getting Started
+
+See `docs/getting_started.md` for the full setup guide.
+
+The minimum viable setup — crash-safe session tracking with nothing else:
+
+```bash
+# At session start:
+CC_DB_URL=... python3 claudecode/session_manager.py start "2024-01-15a" "What you're working on"
+
+# After each unit of work:
+CC_DB_URL=... python3 claudecode/session_manager.py append-change "What you just did"
+
+# At session end (optional — crash-safe without it):
+CC_DB_URL=... python3 claudecode/session_manager.py finalize "2024-01-15a" "What's next" "In-flight hypothesis"
+```
+
+On crash: `session_manager.py show 1` reconstructs what was done.
 
 ---
 
