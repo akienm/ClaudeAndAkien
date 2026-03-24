@@ -9,11 +9,15 @@ This framework ships a set of pre-built skills that encode the workflow discipli
 
 ```bash
 # Copy skills to your Claude Code skills directory
-for skill in context-load decided sprint commit workstep day-close; do
+for skill in context-load decided sprint commit day-close; do
   mkdir -p ~/.claude/skills/$skill
   cp skills/$skill.md ~/.claude/skills/$skill/SKILL.md
 done
 ```
+
+**Important:** only install skills into `~/.claude/skills/`. Do not also put them in your
+project's `.claude/skills/`. Claude Code scans both directories and will register each skill
+twice, causing double-invocation bugs in autonomous sessions.
 
 After installation, `/context-load`, `/decided`, etc. are available in any Claude Code session.
 
@@ -32,12 +36,6 @@ creates a session record in DB, posts session ID to channel.
 **What it does**: claims a ticket from the queue, works it following workstep discipline,
 posts progress to channel, marks done, surfaces next.
 **Why it matters**: one ticket per sprint — no scope creep. Result IS the state record.
-
-### `/workstep`
-**When**: beginning any implementation task.
-**What it does**: enforces the full work loop — orient → plan → (compact for L-size) → implement → close.
-Records phase transitions to session DB. Plan approval gate before any code.
-**Why it matters**: prevents the "just start coding" trap. Every phase transition is recorded.
 
 ### `/decided`
 **When**: after any unit of work closes — a ticket, a design decision, a debugging session.
@@ -75,19 +73,27 @@ The specific paths are just wiring.
 
 ## The Skill Sequence in a Normal Day
 
+**Interactive session** (you present):
 ```
-Morning startup:
-  /context-load          ← always first
-
-During work (repeat):
-  /workstep              ← start each ticket
-  [implement]
-  /decided               ← close each ticket/decision
-  /commit                ← at logical checkpoints
-
-End of day:
-  /day-close             ← once, wraps up docs + GitHub
+/context-load          ← always first; starts session record
+/sprint <ticket-id>    ← claim, implement, test, probe, post result
+/decided               ← record each design decision atomically
+/commit                ← at logical checkpoints
+/day-close             ← once, wraps up docs + GitHub
 ```
+
+**Worker daemon** (autonomous, no human present):
+```
+worker_daemon.sh runs continuously:
+  poll queue → find next pending ticket
+  → claude /sprint <id>   ← minion runs full sprint autonomously
+  → wait for done flag or 30-min timeout
+  → if timeout: reset ticket to pending (retry next cycle)
+  → loop until queue empty, then exit
+```
+
+The daemon handles S and M tickets without intervention. L tickets post a plan to the
+channel before proceeding — the ticket being queued is the pre-approval.
 
 ---
 

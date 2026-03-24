@@ -9,6 +9,19 @@ Arguments (optional):
 
 ---
 
+## Step 0 — Pre-load deferred tools
+
+The `Skill` tool is deferred at session start — call ToolSearch first to load its schema,
+otherwise the first `/context-load` invocation fails with "Invalid tool parameters":
+
+```
+ToolSearch: select:Skill,Bash,Read,Edit,Grep,Glob
+```
+
+Do this before anything else. It is instant and silent.
+
+---
+
 ## Step 1 — Load context
 
 Run `/context-load` first. Get the briefing. Confirm session record is started in DB.

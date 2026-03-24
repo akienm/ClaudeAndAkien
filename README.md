@@ -47,12 +47,17 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 
 ### Skills
 - `/context-load` — trail-based startup briefing; starts session record in DB
-- `/sprint` — claim ticket → work it → post result → surface next
-- `/workstep` — full work loop: orient → plan → implement → close; plan approval gate
+- `/sprint` — claim ticket → work it → post result → write done flag → exit
 - `/decided` — close-out ritual: record decision → accumulate to session record → verify tests → next
 - `/commit` — full cycle: tests → audit → stage specific files → commit → pull → push
 - `/day-close` — end-of-day: sync docs DB, render views, update GitHub discussion, commit docs
 - Domain skills extend these — bind the infrastructure to the problem domain
+
+### Worker Daemon
+- `worker_daemon.sh` — polls queue, spawns `claude /sprint <id>` per ticket, watches for done flag
+- Resets timed-out tickets to pending so they retry automatically
+- Exits cleanly when queue drains; relaunch via `cc_queue.py worker-launch`
+- S/M tickets fully autonomous; L tickets post plan to channel before proceeding
 
 ### Workflow
 - Every workflow segment ends with **interact with the human**
@@ -73,7 +78,7 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 channel/        Shared JSONL channel — post/read/listen, no server required
 db/             db_proxy — unified DB access, SQLite/Postgres shim, timing
 web/            Standalone web server — channel WebSocket, health, file endpoints
-skills/         Claude Code slash skills — context-load, sprint, workstep, decided, commit, day-close
+skills/         Claude Code slash skills — context-load, sprint, decided, commit, day-close
 claudecode/     Claude Code integration helpers
   session_manager.py   Crash-safe session accumulation in Postgres
   decision_manager.py  Atomic decision recording — DB + log in one call
