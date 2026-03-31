@@ -90,6 +90,7 @@ docs/           Human-readable documentation
   crash_safe_sessions.md  Before/after crash recovery pattern
   slate_workflow.md    Horizon cascade, daily flow, adopted bugs
   skills_guide.md      All 6 skills explained + daily sequence
+  working_together.md  Field notes: how to work with Claude effectively
 ```
 
 ---
