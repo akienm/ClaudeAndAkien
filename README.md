@@ -51,6 +51,17 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 - `/decided` — close-out ritual: record decision → accumulate to session record → verify tests → next
 - `/commit` — full cycle: tests → audit → stage specific files → commit → pull → push
 - `/day-close` — end-of-day: sync docs DB, render views, update GitHub discussion, commit docs
+- `/savestate` — end-of-session ritual: flush summary, record decisions, finalize session record
+- `/slate` — start-of-slate planning: orient, review tickets, agree on scope, write slate.md
+- `/slateclose` — close a slate: summarize, post to GitHub, archive slate.md
+- `/filter` — plan verification: inertia levels, tests, logging, scope boundary, size match
+- `/audit` — automated health check: tests, smells, registry, habits, dead code, credentials
+- `/fixit` — ticket → filter → sprint loop for small known bugs
+- `/review` — pre-decision design check: CS and architecture antipatterns, simplification
+- `/probe` — behavioral verification: inject stimulus, observe response, report pass/fail
+- `/test-fix` — bounded test-run-and-fix loop (3 passes, then escalate)
+- `/validate-files` — audit runtime file placement; produce candidates-for-removal report
+- `/notethat` — lightweight conversation bookmark before it evaporates
 - Domain skills extend these — bind the infrastructure to the problem domain
 
 ### Worker Daemon
