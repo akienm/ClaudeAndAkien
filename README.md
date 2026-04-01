@@ -32,16 +32,16 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 
 ### Coordination
 - **Slate** — shared source of truth for what's active (`~/.channel/slate.md`)
-- **Tickets** — unit of work; size S/M/L; priority; status; result written back on completion
+- **Tickets** — unit of work; size S/M/L; priority; status; result written back on completion; `required_files` pre-declares context needed; `related_to` links tickets sharing context
 - **Queue** — JSONL ticket queue; any session reads next pending; result IS the savestate
 
 ### Execution
 - **Spawned minions** — Claude Code sessions as focused workers; smallest possible context per session
 - **Leave-running pattern** — minion's loaded context persists; give it the next related ticket via SendMessage
-- **Plan approval gate** — L-size tickets post plan to channel before any code; human approves
+- **Plan approval gate** — L-size tickets auto-run `/filter` before posting plan to channel; blocking filter failures stop execution before any code is written; human approves after filter passes
 
 ### Context
-- `/context-load` skill — read slate → fetch blob tops → read channel → assemble briefing; ~60 lines total
+- `/context-load` skill — read slate → fetch blob tops → read channel → assemble briefing; **2000-token budget** (~8000 chars; ~4 chars per token); token count reported in briefing output
 - **DB document tree** — project docs as traversable graph in Postgres; root node describes structure; traverse only what you need
 - No reading 8 files at session start — slate + blob tops replace it
 
@@ -68,7 +68,7 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 - `worker_daemon.sh` — polls queue, spawns `claude /sprint <id>` per ticket, watches for done flag
 - Resets timed-out tickets to pending so they retry automatically
 - Exits cleanly when queue drains; relaunch via `cc_queue.py worker-launch`
-- S/M tickets fully autonomous; L tickets post plan to channel before proceeding
+- S/M tickets fully autonomous; L tickets auto-run `/filter`, then post plan + filter result to channel before proceeding
 
 ### Workflow
 - Every workflow segment ends with **interact with the human**
@@ -91,7 +91,7 @@ db/             db_proxy — unified DB access, SQLite/Postgres shim, timing
 web/            Standalone web server — channel WebSocket, health, file endpoints
 skills/         Claude Code slash skills — context-load, sprint, decided, commit, day-close
 claudecode/     Claude Code integration helpers
-  session_manager.py   Crash-safe session accumulation in Postgres
+  session_manager.py   Crash-safe session accumulation in Postgres; append-tool-output records per-call tool summaries for crash reconstruction
   decision_manager.py  Atomic decision recording — DB + log in one call
   slate_manager.py     Slate CRUD + horizon cascade + render to ~/.channel/slate.md
   github_sync.py       Pull GitHub issues into Postgres for planning
