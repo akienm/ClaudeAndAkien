@@ -27,7 +27,15 @@ Accept that Claude is a good coder, not always a great one. Plan to periodically
 
 **The two-session pattern: Designer + Worker.** Complex work splits across two roles. The Designer Claude (interactive, with you present) handles architecture, planning, and anything requiring judgment. The Worker Claude runs as an autonomous daemon, consuming tickets from the queue and executing sprints without human interaction. The queue is the handoff point. The shared channel is the coordination substrate — both sessions post to it and can read each other's output. This pattern scales: multiple workers on multiple machines can pull from the same queue.
 
-**Save state at the end of every session.** Agree a ledger of work, say "save state and go," and the next session picks up from disk with full context. The session record is a real artifact, not a courtesy.
+**Save state when decisions are made and work starts — not only at the end.** Each savestate captures the current hypothesis so a crash mid-session loses only the in-flight prediction, not the decisions. The session record accumulates progressively; finalize adds synthesis only.
+
+**Daily slates are dated files, not a rolling document.** Each day gets a fresh `YYYYMMDD.slate.txt`. Old closed tickets don't carry forward — they go into a separate `closed_tickets.txt` blob (newest at top: date / ticket ID / description). Context-load creates today's file if it doesn't exist. The slate shows only what's active: pending tickets, today's decisions, and any `/notethat` bookmarks.
+
+**Tickets live in both the local queue and GitHub Issues.** The local queue is the work-state source of truth. GitHub Issues are the cloud backup and visibility layer. Each ticket carries a `github_issue` field; GitHub issue titles include the queue slug so either side is searchable. `/day-close` syncs tickets missing a GitHub issue number. If the local drive dies, GitHub is what survives.
+
+**Each day gets its own GitHub Discussion** (not a comment on the master plan thread). The day's Discussion echoes the slate: tickets opened, closed, decisions made, notes captured. The master plan thread is for roadmap and architecture, updated occasionally but not daily.
+
+**`/notethat` appends to today's slate.** Invoke to preserve an idea or conversation fragment before it evaporates. The full note goes to a dated file; a one-liner headline lands in today's slate for context-load to find. Depth is a judgment call — a sentence or a full conversation excerpt, whatever the idea needs.
 
 **Use `/compact preserve: [...]` at natural breakpoints.** Auto-compact fires at unpredictable moments. If you run it manually with explicit preservation instructions — open gaps, modified files, current hypothesis — the summary targets what matters instead of what's statistically prominent. In CLAUDE.md, a "Compact Instructions" section primes the summarizer for every auto-compact too. Both together mean context transitions don't lose the thread.
 
@@ -112,6 +120,35 @@ Dead code pass. Unused imports, unreachable branches, functions defined but neve
 AI-assisted development moves fast enough that testability, observability, and hot-reloadability have to be designed in from day one. The velocity is the problem, not just the opportunity.
 
 Code is scaffolding for what the agent learns. The scaffolding comes down as the knowledge base densifies.
+
+---
+
+## Docs Live in Code (2026-04-19)
+
+Named after the sixth time Akien had to re-explain the same subsystem to a fresh Claude session: *"ALL of that should be in the code."*
+
+The rule:
+
+- **Subsystem docs belong in the code file that owns them** — top-of-file docstring on the primary file of each load-bearing subsystem. Design decisions, architectural intent, which decisions shaped the design, which engrams/memory-nodes participate.
+- **Maintain a directory service** — a small data structure (Igor uses the memory palace, but any queryable store works) mapping each subsystem to its primary file. Claude queries the service before surgery, reads the file's top docstring, *then* edits.
+- **Demote external docs to historical logs** — `*.dsb`, `*.csb`, `design_docs/*.md` stop being authoritative when the docstring version lands. Leave them in place as history; add a banner pointing at the code.
+- **"Akien explains something twice" → the second explanation goes into the docstring, not into a separate doc.** Bias for inline. Against extraction.
+- **Scope:** load-bearing subsystems only. Trivial utilities still follow "don't comment the obvious."
+
+The motivation is recovery against Claude's own failure modes. Session boundaries drop Claude's memory of what-this-subsystem-is. External docs rot because sessions don't open them. Docs next to code don't rot — they're in the only place a session reliably looks.
+
+---
+
+## Durable Config Versioning (2026-04-18)
+
+A sibling rule for config-shaped state (fleet registry, watchlist, subsystem index):
+
+- **Source-of-truth is a YAML in the repo** (`lab/seed/*.yaml` for TheIgors; adjust path for your project).
+- **A short idempotent seeder projects YAML → DB** (or whatever the runtime store is).
+- **Git log IS the version history.** Rollback is `git checkout <sha> && python3 seed_*.py`.
+- Direction is inverse from the memory-palace-style DB→file echo — here the file is authoritative because the content is human-composed, not graph-accreted.
+
+Rule of thumb: **if losing this would make the human say "that's scary," it wants a YAML.**
 
 ---
 
