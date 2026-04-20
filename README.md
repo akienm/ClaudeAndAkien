@@ -31,9 +31,11 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 - No participant depends on another being up — channel persists across restarts
 
 ### Coordination
-- **Slate** — shared source of truth for what's active (`~/.channel/slate.md`)
-- **Tickets** — unit of work; size S/M/L; priority; status; result written back on completion; `required_files` pre-declares context needed; `related_to` links tickets sharing context
+- **Slate** — daily dated file (`~/.channel/YYYYMMDD.slate.txt`); fresh each day; context-load creates if missing; shows only active tickets, today's decisions, and `/notethat` bookmarks
+- **Closed tickets blob** — `~/.channel/closed_tickets.txt`; newest at top; `YYYY-MM-DD | T-id | description`; closed tickets prepend here, not accumulate in the slate
+- **Tickets** — unit of work; size S/M/L; priority; status; `github_issue` number for cloud backup; `required_files` pre-declares context; `related_to` links related tickets
 - **Queue** — JSONL ticket queue; any session reads next pending; result IS the savestate
+- **GitHub Issues** — cloud backup for every ticket; local queue is source of truth for work state; `/day-close` creates issues for tickets missing `github_issue`; each day gets its own GitHub Discussion (not comments on the master thread)
 
 ### Execution
 - **Spawned minions** — Claude Code sessions as focused workers; smallest possible context per session
@@ -55,7 +57,7 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 - `/slate` — start-of-slate planning: orient, review tickets, agree on scope, write slate.md
 - `/slateclose` — close a slate: summarize, post to GitHub, archive slate.md
 - `/filter` — plan verification: inertia levels, tests, logging, scope boundary, size match
-- `/audit` — automated health check: tests, smells, registry, habits, dead code, credentials
+- `/day-close-audit` — automated debris + health check run during /day-close: tests, smells, registry, habits, dead code, credentials (renamed 2026-04-20 from `/audit` — `/review` handles plan/code review; `/day-close-audit` handles debris)
 - `/fixit` — ticket → filter → sprint loop for small known bugs
 - `/review` — pre-decision design check: CS and architecture antipatterns, simplification
 - `/probe` — behavioral verification: inject stimulus, observe response, report pass/fail
@@ -93,13 +95,13 @@ skills/         Claude Code slash skills — context-load, sprint, decided, comm
 claudecode/     Claude Code integration helpers
   session_manager.py   Crash-safe session accumulation in Postgres; append-tool-output records per-call tool summaries for crash reconstruction
   decision_manager.py  Atomic decision recording — DB + log in one call
-  slate_manager.py     Slate CRUD + horizon cascade + render to ~/.channel/slate.md
-  github_sync.py       Pull GitHub issues into Postgres for planning
+  slate_manager.py     Daily dated slate files — create, close-ticket, render YYYYMMDD.slate.txt
+  github_sync.py       Push tickets to GitHub Issues; create issues for tickets missing github_issue
   cc_queue.py          Ticket queue — list, start, done, add
 docs/           Human-readable documentation
   getting_started.md   Prerequisites, setup, minimum viable config
   crash_safe_sessions.md  Before/after crash recovery pattern
-  slate_workflow.md    Horizon cascade, daily flow, adopted bugs
+  slate_workflow.md    Daily dated slate files, closed-tickets blob, GitHub sync, daily flow
   skills_guide.md      All 6 skills explained + daily sequence
   working_together.md  Field notes: how to work with Claude effectively
 ```
