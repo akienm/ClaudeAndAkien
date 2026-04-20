@@ -1,93 +1,83 @@
 ---
 name: fixit
-description: Quick-fix loop for TheIgors. Ticket → Filter → Sprint → Slate. Use when Akien says /fixit, "fix this", or "quick fix for X".
-model: haiku
-model_exception: Step 4 (/sprint) runs under Sonnet — implementation requires full reasoning capability.
+description: Fast reactive shortcut — /decided (implicit design over the just-discussed thing) + /sprint-batch on the just-filed tickets. For bug-shaped quick reactions. Replaces the old /ticket + /sprint single-ticket shortcut as of 2026-04-20.
+model: sonnet
 ---
 
-# fixit — Ticket → Filter → Sprint → Slate
+# /fixit — Implicit design, batch sprint
 
-Quick-fix loop. Takes a known problem (bug, misfire, small gap) and drives it
-to done in one motion: ensures a ticket exists, gates on filter, runs sprint,
-updates the slate.
+The fast path. Use when Akien says "fix this", "quick fix", "/fixit", or when a bug is known and the discussion is short. More considered work uses the explicit `/design` → discussion → `/decided` loop instead.
 
-Use when: something small is broken and you want to fix it right now without
-manually orchestrating ticket → filter → sprint → slate update.
+## What /fixit is
 
-Arguments:
-  /fixit <description>        — creates ticket, then works it
-  /fixit <ticket-id>          — picks up existing ticket, works it
+`/fixit` = `/decided` + `/sprint-batch` on the just-filed tickets. Nothing more.
 
----
+That means:
+- Implicit design scope — the "thing just discussed" covers the recent conversation turns
+- Full filing-time `/review` runs on every drafted ticket (duplicate / already-done-in-code / blocked-by-pending / size sanity / scope-creep / test-plan / HIGH-inertia inline approval + stamp)
+- Every ticket that gets filed also gets sprinted in this same invocation
+- Multiple tickets is fine — /fixit is not limited to a single ticket, it inherits /sprint-batch's multi-ticket handling
 
-## Step 1 — Ensure a ticket exists
+## Steps
 
-If an existing ticket ID was given, read it:
-```bash
-python3 ~/TheIgors/claudecode/cc_queue.py show <ticket-id>
-```
+1. **Invoke /decided** with implicit scope (recent conversation since last /decided or session start). This:
+   - Summarizes the decision (1-2 sentences; assigns a D-... id)
+   - Drafts ticket(s) needed to implement
+   - Runs /review on each drafted ticket; applies AMEND / SPLIT / DISCARD based on findings; stamps HIGH-inertia approvals
+   - Files the surviving tickets into queue.json + slate + session + Igor palace
 
-If a description was given (no ticket ID), create a minimal ticket:
-```bash
-python3 ~/TheIgors/claudecode/cc_queue.py add "<title>" "<one-line description>" --priority 2
-```
-Capture the returned ticket ID. Use it for the rest of the steps.
+2. **Invoke /sprint-batch** with selector `decision:D-<just-created-id>` — runs all tickets spawned by step 1 in topo-sorted dependency order. Per ticket: claim → build → test → cleanup → doc-refresh → commit+push → close. Retroactive "oh, and I also fixed this" incidental tickets are filed automatically if the commit includes debris-scope fixes.
 
-Add to today's slate (position 0):
-```bash
-DB=postgresql://igor:choose_a_password@127.0.0.1/igor_wild_0001
-IGOR_HOME_DB_URL=$DB python3 ~/TheIgors/claudecode/slate_manager.py add-ticket 0 "<ticket-id>" "<title>"
-```
+3. **/savestateauto** at batch end (handled by /sprint-batch).
 
----
-
-## Step 2 — State the plan (one paragraph)
-
-Write out explicitly:
-- What file(s) change (with inertia level)
-- What the fix does
-- What test verifies it
-- What is NOT changing (scope boundary)
-
-This is the plan that /filter will check. Keep it tight — /fixit is for small fixes.
-
----
-
-## Step 3 — Run /filter
+## Report
 
 ```
-/filter
+/fixit — <one-line summary>
+Decision: D-... (spawned <N> tickets)
+Sprinted: T-x, T-y, T-z (<M> completed, <P> skipped/blocked)
+Commits: <hash1>, <hash2>, ...
 ```
 
-Pass the plan from Step 2 as the argument. Fix any blocking issues before continuing.
-If filter fails on a non-blocking note, proceed and note the exception.
+## When NOT to use /fixit
 
----
+- When the scope is load-bearing or architectural — use explicit `/design` → discussion → `/decided` → `/sprint-batch` instead. /fixit's implicit scope inference is fine for small reactive work; for bigger work, explicit design brackets are worth the ceremony.
+- When the work needs multiple days to ship — /fixit is a single-session shortcut. Multi-day efforts file tickets via `/decided` and get sprinted later.
+- When Akien wants to stop after /decided and review tickets before sprint. Say `/decided` directly instead of `/fixit`; then `/sprint-batch <selector>` later.
 
-## Step 4 — Run /sprint <ticket-id>
+## Flow comparison
 
+**Considered design loop:**
 ```
-/sprint <ticket-id>
-```
-
-Sprint handles: implement → test-fix → probe → record → close ticket → render slate.
-
----
-
-## Step 5 — Confirm slate updated
-
-After sprint completes, verify the ticket shows closed on the slate:
-```bash
-DB=postgresql://igor:choose_a_password@127.0.0.1/igor_wild_0001
-IGOR_HOME_DB_URL=$DB python3 ~/TheIgors/claudecode/slate_manager.py render
+/design (optional)
+  → discussion, exploration, questions
+/decided
+  → tickets filed with /review applied
+/sprint-batch (later, after approval or at a natural moment)
+  → tickets shipped
 ```
 
-Print the updated P1/P2 section so Akien can see it landed.
-
----
+**/fixit (reactive shortcut):**
+```
+"fix this" or "/fixit :)"
+  → /decided (implicit scope on recent turns)
+  → /sprint-batch (immediately, on the just-filed tickets)
+  → done
+```
 
 ## Hard rules
 
-- One fix per /fixit — if scope grows during implementation, stop and ticket the new scope
-- S/M size only — if the fix turns out to be L, stop at Step 2 and escalate to /sprint directly
-- Always add to slate before working — the slate is truth
+- Never skip /review — even in the fast path, filing-time quality gate applies.
+- Never bypass HIGH-inertia approval — the inline prompt fires even during /fixit; Akien pre-approves and the stamp lands in the ticket body.
+- Never sprint past a gated ticket — /sprint-batch filters gated tickets; a ticket gated by /review (e.g. "needs pre-approval") must clear its gate before sprinting.
+- Never combine tickets from different decisions — if /decided during /fixit produces multiple distinct decisions, each gets its own D- id; /sprint-batch scopes to just the current /fixit invocation's decision id.
+
+## Related
+
+- **/decided** — the filing half of /fixit; invokable standalone for design-mode work that should queue up, not sprint immediately.
+- **/sprint-batch** — the sprint half of /fixit; invokable standalone against any selector (today-slate, tag:..., explicit ids).
+- **/review** — invoked per-ticket by /decided during /fixit; also standalone for diff/PR/plan review.
+
+## Historical note
+
+Before 2026-04-20, /fixit = `/ticket last` + `/sprint last` — single-ticket shortcut for pre-filed work. The rewrite aligns with the broader workflow overhaul (D-workflow-overhaul-2026-04-20) that introduced /decided + /review-as-filing-time + /sprint-batch.

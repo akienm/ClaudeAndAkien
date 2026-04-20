@@ -49,28 +49,39 @@ emotional milieu) live in TheIgors. This repo contains the frame.
 
 ### Skills
 - `/context-load` — trail-based startup briefing; starts session record in DB
-- `/sprint` — claim ticket → work it → post result → write done flag → exit
-- `/decided` — close-out ritual: record decision → accumulate to session record → verify tests → next
-- `/commit` — full cycle: tests → audit → stage specific files → commit → pull → push
+- `/design` — (optional) mark the start of a design block so /decided knows scope
+- `/decided` — close a design block: summarize, draft tickets, run /review per draft, file batch with two-way decision↔ticket links, write to queue + slate + session + palace
+- `/review` — filing-time checks (duplicate, already-done-in-code, blocked-by-pending, size sanity, scope-creep, test-plan emit, HIGH-inertia inline approval). Also invokable standalone on a plan/diff/PR
+- `/sprint` — single-ticket: claim → work → test → cleanup → doc-refresh → commit+push → close → savestateauto
+- `/sprint-batch` — multi-ticket: selector (today-slate, slate:planned, decision:D-..., tag:..., explicit ids); shared setup, topo-sorted dep order, one commit per ticket
+- `/fixit` — fast reactive shortcut = /decided + /sprint-batch on just-filed tickets (rewritten 2026-04-20; previously /ticket + /sprint single-ticket)
+- `/export-chat` — dump current CC session transcript to claude_chat_logs/YYYY-MM-DD.md for recovery. Flags: --all, --session <id>, --dry-run
+- `/commit` — standalone full cycle: tests → stage specific files → commit → pull → push
 - `/day-close` — end-of-day: sync docs DB, render views, update GitHub discussion, commit docs
+- `/day-close-audit` — automated debris + health check run during /day-close (renamed 2026-04-20 from `/audit` — `/review` handles plan/code review; `/day-close-audit` handles debris)
 - `/savestate` — end-of-session ritual: flush summary, record decisions, finalize session record
-- `/slate` — start-of-slate planning: orient, review tickets, agree on scope, write slate.md
-- `/slateclose` — close a slate: summarize, post to GitHub, archive slate.md
-- `/filter` — plan verification: inertia levels, tests, logging, scope boundary, size match
-- `/day-close-audit` — automated debris + health check run during /day-close: tests, smells, registry, habits, dead code, credentials (renamed 2026-04-20 from `/audit` — `/review` handles plan/code review; `/day-close-audit` handles debris)
-- `/fixit` — ticket → filter → sprint loop for small known bugs
-- `/review` — pre-decision design check: CS and architecture antipatterns, simplification
+- `/savestateauto` — lightweight state flush invoked between work steps (no compact)
+- `/slate` — start-of-slate planning: orient, review tickets, agree on scope
+- `/slateclose` — close a slate: summarize, post to GitHub, archive
 - `/probe` — behavioral verification: inject stimulus, observe response, report pass/fail
 - `/test-fix` — bounded test-run-and-fix loop (3 passes, then escalate)
-- `/validate-files` — audit runtime file placement; produce candidates-for-removal report
+- `/validate-files` — audit runtime file placement; candidates-for-removal report
 - `/notethat` — lightweight conversation bookmark before it evaporates
+- `/note` — insight/decision to notes.log (non-ticket items)
 - Domain skills extend these — bind the infrastructure to the problem domain
 
-### Worker Daemon
-- `worker_daemon.sh` — polls queue, spawns `claude /sprint <id>` per ticket, watches for done flag
-- Resets timed-out tickets to pending so they retry automatically
-- Exits cleanly when queue drains; relaunch via `cc_queue.py worker-launch`
-- S/M tickets fully autonomous; L tickets auto-run `/filter`, then post plan + filter result to channel before proceeding
+**Deprecated (for case-study context):**
+- `/filter` — merged into `/review` in 2026-04-20; same checks now live in `/review`'s filing-time mode
+- `/audit` — renamed to `/day-close-audit` in 2026-04-20 (same behavior, clearer role split from `/review`)
+
+### Batched sprint, in-process pickup
+- `/sprint-batch` handles the multi-ticket case (shared setup, topo-sorted dep order, one commit per ticket)
+- Ticket pickup on idle migrated to biomimetic engram chain `ENGRAM_TICKET_PICKUP_SCAN → ENGRAM_TICKET_PICKUP_ADOPT → ENGRAM_CODE_INIT` — Igor picks up his own work in-process, no konsole-spawned separate session
+- Shared channel (messages.jsonl) remains the coordination substrate across CC + Igor + across-machine
+- Multiple CC instances can still pull from the same queue against the same Postgres DB — the worker *daemon* is gone, not the multi-instance capability
+
+**Retired (for case-study context):**
+- `worker_daemon.sh` — polled queue and spawned `claude /sprint <id>` per ticket. Replaced by `/sprint-batch` + biomimetic engram pickup. Retired T-retire-worker-foreman (Phase A + B complete 2026-04-19; Phase C destructive cleanup still pending)
 
 ### Workflow
 - Every workflow segment ends with **interact with the human**

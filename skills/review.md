@@ -1,87 +1,99 @@
 ---
 name: review
-description: Pre-decision design review for TheIgors. Checks latest thinking against CS and CogSci patterns — surfaces antipatterns, alternatives, simplifications. Runs before /decided when Akien says /review, "check this", "does this make sense", or "am I missing something". Lightweight speedbump, not a deep dive.
+description: Filing-time + standalone critical review. Primary use — called by /decided on each drafted ticket (duplicate/already-done/blocked-by/size/scope-creep/test-plan/HIGH-inertia). Also invokable directly on a risky diff/PR/plan, or before a sprint claim. Replaces the old /filter + /review with one skill covering both.
+model: haiku
 ---
 
-# Review — Pre-Decision Design Check
+# /review — Filing-time + standalone critical review
 
-Fires before a design decision is locked. Not a deep research task.
-Goal: catch the thing Akien didn't ask about. Surface it. Then get out of the way.
+Two modes; same checks applied to different inputs.
 
----
+## Mode A — filing-time (called by /decided and /fixit)
 
-## Step 1 — Identify what's being reviewed
+Each drafted ticket, BEFORE it lands in queue.json, goes through these checks. Input: the ticket as a dict (id, title, size, tags, description). Output: verdict (PASS / AMEND / SPLIT / DISCARD), findings, optionally a modified ticket dict that `/decided` uses instead of the original.
 
-From recent conversation, identify:
-- The design idea or decision under consideration (1-3 sentences max)
-- What problem it's solving
-- What layer it touches (graph, habits, inference, cognition, infra, process)
+### Checks (in order)
 
-If ambiguous: ask "what's the decision?" before proceeding.
+1. **Duplicate detection** — grep `queue.json` for tickets with overlapping id, title, or significant description n-grams across status `pending`, `in_progress`, and recent `done`. If found: output `DISCARD: duplicate of T-xxx (shipped|pending)`, or `AMEND: merge with T-xxx` if the new description adds material the existing one lacks.
+2. **Already-done-in-code** — grep the codebase for the key symbols/tool-names/file-paths the ticket proposes to add. If they already exist with the described behaviour: output `DISCARD: already implemented in <file>:<line>`. This catches the "we wrote this last month, forgot, and re-ticketed it" failure mode.
+3. **Blocked-by-pending** — if the ticket's description mentions code/features/tools described by another pending ticket, output `AMEND: add gate "<ticket-id>"` so it doesn't try to sprint before its dependency is real.
+4. **Size sanity** — compare declared size vs description scope.
+   - XL declared on ≤300 words of description → flag as possibly not-actually-XL
+   - S declared on ≥800 words of description → flag as probably bigger than S
+   - L or XL → nudge for breakdown: "does this want to be 2-3 child tickets?" Output `SPLIT: propose <N> children with <shapes>` if obvious cuts exist
+5. **Scope-creep** — does the description actually contain multiple separable tickets? ("Also: refactor X", "While we're at it, Y"). If yes: `SPLIT: propose <N> children`.
+6. **Test-plan** — emit a `test_plan:` field on the ticket if missing. At minimum: which new tests, which existing regressions, any real-DB integration test needed (no-mocks rule). Not writing the tests, just planning them.
+7. **HIGH-inertia check** — if the description names `brainstem/`, `memory/models.py`, `cognition/reasoners/base.py`, or any other file flagged HIGH-inertia in the rules:
+   - ASK AKIEN INLINE: "This ticket touches <file> (HIGH inertia). Pre-approve? y/n/reword"
+   - If pre-approved: stamp ticket body: `pre-approved by Akien YYYY-MM-DD for touching <file> — reason: <reason>`
+   - If not: `AMEND: rescope to avoid <file>`, or `DISCARD`
 
----
-
-## Step 2 — Run the checklist
-
-For each check, mark CONCERN / CLEAN / N/A:
-
-### CS Antipatterns
-- **Wrong layer**: Is the problem being solved at the right abstraction level? (e.g. fixing a data problem with code, fixing a code problem with config)
-- **Premature abstraction**: Is this generalizing before there's a second case? One use = inline it.
-- **Hidden coupling**: Does this create a dependency that isn't obvious from the call site?
-- **Complexity budget**: Does the complexity added match the problem size? L-size fix for an S-size problem = flag.
-- **Mock risk**: Is anything being faked that should be tested live?
-- **print() instead of logging**: Does new/changed code use bare `print()` for observable output? Should be `logging.getLogger(__name__)` so the console handler (when it exists) can subscribe. Flag any new `print()` outside of main.py's Rich console path.
-
-### CogSci / Architecture Antipatterns (TheIgors-specific)
-- **Inference masking a gap**: Is this adding inference where a graph node should exist?
-- **Habit over graph**: Is this encoding a response as a habit when it should be learned graph structure?
-- **Wrong training signal**: Is the feedback loop teaching the right thing? (e.g. wg_cooccur is corpus stats, not cognitive relevance)
-- **Anthropomorphizing too literally**: Is a human cognitive claim being mapped 1:1 to code without checking if the analogy holds at this level of detail?
-- **Escalation hiding failure**: Would this make the system look like it's working when it's actually falling through to inference every time?
-
-### Simplification check
-- Is there a simpler thing that does 80% of this?
-- Can this be done with existing infrastructure rather than new code?
-- What's the minimum viable version of this idea?
-
----
-
-## Step 3 — Output
+### Output format (filing-time)
 
 ```
-REVIEW — <one-line description of what was reviewed>
+/review — <ticket-id>
+Verdict: PASS | AMEND | SPLIT | DISCARD
 
-Checks:
-  [CONCERN] Wrong layer — <one sentence why>
-  [CLEAN]   Hidden coupling
-  [CONCERN] Habit over graph — <one sentence why>
-  [CLEAN]   Simplification — existing infra covers this
-  ...
+Findings:
+- <finding 1>
+- <finding 2>
 
-Concerns: N
-Simplification candidate: <yes/no + one line if yes>
-
-Recommendation: <one of:>
-  - "Looks clean — proceed to /decided"
-  - "N concern(s) worth discussing before locking"
-  - "Suggest simplification: <what>"
+Amended ticket (if AMEND): <diff from input>
+Child proposals (if SPLIT): <list of {id, title, size, description-sketch}>
+Discard reason (if DISCARD): <one line>
 ```
 
----
+### Writes (for T-review-self-learning)
 
-## What /review is NOT
+Every /review invocation writes a `review_findings` record to the DB (when T-review-self-learning ships). For now, log to `~/.TheIgors/claudecode/logs/YYYYMMDD.review.log` so the future self-learning pass can backfill.
 
-- Not a blocker — Akien decides whether to act on concerns
-- Not a deep CogSci literature dive — surface pattern matches only
-- Not a repeat of /filter — filter checks plan completeness, review checks design quality
-- Not a veto — concerns are inputs, not decisions
+## Mode B — standalone (code / plan / PR)
 
-## Positioning in workflow
+Same checks, different shape of input.
+
+### Plan review
+
+Given a plan-in-conversation (usually triggered pre-/sprint by Akien saying "/review this plan"):
+1. Inertia — which files will be touched? HIGH needs justification.
+2. Tests — will tests exist for this? Integration vs mocked?
+3. Scope — in vs out. Scope creep?
+4. Simplicity — standard pattern (registry, queue, observer) vs bespoke?
+5. Reversibility — can this be undone cleanly if wrong?
+
+### Code / diff review
+
+Given a diff (staged changes or a specific commit range):
+1. Secrets — no `.env`, keys, passwords, hardcoded paths
+2. Dead code — commented-out blocks, unused imports, replaced-but-not-removed functions
+3. Debug artifacts — print statements, temp files, TODO without ticket
+4. Test coverage — new behaviour = new test
+5. Matches ticket — diff reflects what the ticket asked for, nothing extra
+6. Inertia violations — HIGH-inertia files changed without justification
+
+### PR review
+
+`/review <PR#>`: fetch via `gh api repos/<org>/<repo>/pulls/<N>/comments` + `gh pr diff <N>`. Apply the code-review checklist above.
+
+### Output format (standalone)
 
 ```
-Discussion → /review → (address concerns or override) → /decided → /filter → work
+REVIEW — <plan|code|PR#>
+Verdict: PASS | MUST-FIX | DISCUSS
+
+Must-fix: <blocking issues — do not proceed until resolved>
+Suggestions: <non-blocking improvements>
 ```
 
-If /review surfaces nothing: proceed to /decided immediately.
-If /review surfaces concerns: discuss, then /decided captures whatever was resolved.
+## Hard rules
+
+- Must-fix items block the sprint / filing. Do not proceed until resolved.
+- If Akien overrides a must-fix: record it and proceed (the override becomes training data for /review self-learning).
+- Don't review your own work as "PASS" by default — actually look.
+- Filing-time /review runs in seconds (Haiku-shaped checklist work). Standalone /review on a complex plan can escalate to Sonnet reasoning if needed.
+- Log every invocation to the review log file so T-review-self-learning can later read it.
+
+## Related
+
+- **/decided** — calls /review in filing-time mode on each drafted ticket before adding to queue.
+- **/fixit** — (after rewrite) same, since /fixit = /decided + /sprint-batch.
+- **T-review-self-learning** (gated) — reads the review log to adjust per-flag confidence over time.
