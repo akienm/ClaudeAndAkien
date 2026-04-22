@@ -21,8 +21,8 @@ Before scanning, internalize the correct layout:
 | Source tree | `~/TheIgors/` | Code only. No runtime data ever. |
 | Home | `~` | No Igor files. Ever. |
 
-Current DB name: `igor_wild_0001`
-Current instance: `igor_wild_0001` (DB and instance share the name currently)
+Current DB name: `Igor-wild-0001`
+Current instance: `Igor-wild-0001` (DB and instance share the name currently)
 
 ---
 
@@ -64,13 +64,13 @@ ls -la ~/.TheIgors/ 2>/dev/null
 **Expected at root** (machine-global, intentionally shared):
 - `local/` directory — machines.json, cluster config
 
-**Expected at root** (database-global, currently misplaced — should be under `~/.TheIgors/igor_wild_0001/`):
+**Expected at root** (database-global, currently misplaced — should be under `~/.TheIgors/Igor-wild-0001/`):
 - `word_graph.db` — should be database-global under DB folder
 - `milieu_global.json` — database-global, currently at root (misplaced)
 - `SOUL.md` — database-global, currently at root (misplaced)
 - `cache/` — could be machine-global (shared across DBs) or database-global; flag for decision
 
-**Clearly misplaced** (should be instance-local under `~/.TheIgors/igor_wild_0001/`):
+**Clearly misplaced** (should be instance-local under `~/.TheIgors/Igor-wild-0001/`):
 - `learn_queue.json` — instance-local (we created this)
 - `drain_learn_queue.pid` — instance-local (we created this)
 - Any `warm_context.*.json`
@@ -159,7 +159,7 @@ never remove without explicit instruction.
 While scanning, also note:
 - Files that would move cleanly if an Instance object managed paths
 - Files shared across instances that need the database-global vs instance-local split resolved
-- Any hardcoded `igor_wild_0001` strings in source (these break multi-instance)
+- Any hardcoded `Igor-wild-0001` strings in source (these break multi-instance)
 - Word graph: flag whether it looks instance-specific or truly shared
 
 These observations feed the Instance refactor design — capture them in the report.

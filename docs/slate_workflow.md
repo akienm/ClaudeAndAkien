@@ -1,111 +1,126 @@
 # The Slate Workflow
 
-A slate is a named, themed bundle of work — roughly a day's worth.
+A slate is today's work plan — a live, dated file that travels through the day with you.
 
 The name comes from film production: "what's on the slate today?"
-It's more fluid than an epic or a sprint. It adapts to the day.
-
----
-
-## The Horizon Cascade
-
-Slates exist at multiple positions, getting vaguer the further out they are:
-
-```
-Slate 0 — TODAY        precise: tickets defined, acceptance criteria written
-Slate 1 — NEXT         shaped: theme clear, tickets mostly defined
-Slate 2 — AFTER NEXT   rough: theme known, tickets fuzzy
-Slate 3+ — FUTURE      placeholder: name only, will sharpen as we approach
-```
-
-This matches how planning actually works. You don't need tomorrow's details today.
-As you close slate 0 and advance, everything shifts down and sharpens.
-
----
-
-## What a Slate Contains
-
-```python
-{
-  "id": "slate-2024-01-15",
-  "position": 0,
-  "name": "Auth refactor",
-  "done_when": "All auth middleware tests pass, deployed to staging",
-  "tickets": [
-    {"id": "T-auth-middleware", "title": "Rewrite auth middleware", "status": "in_progress"},
-    {"id": "T-auth-tests",      "title": "Integration test suite",  "status": "pending"},
-    {"id": "bug-token-leak",    "title": "Token leak in /refresh",  "type": "adopted_bug", "status": "done"}
-  ],
-  "notes": "Legal flagged session token storage; compliance deadline end of month"
-}
-```
-
-**Adopted bugs** are fixes that surfaced during the slate's work — not planned, but absorbed.
-They don't change the slate's scope; they're just acknowledged as part of the day's reality.
+It adapts to the day. It's not a sprint backlog or an epic — it's what's actually happening right now.
 
 ---
 
 ## The Slate File
 
-The slate is rendered to `~/.channel/slate.md` by `slate_manager.py render`.
-This file is the first thing `context-load` reads — it's the entry point for any new session.
+Each day gets its own dated file: `~/.channel/YYYYMMDD.slate.txt`.
 
-Because it's rendered from Postgres, it's always current.
-Multiple Claude Code tabs all see the same slate.
+Context-load creates it if it doesn't exist. Each day starts fresh — closed tickets from
+prior days don't carry forward. The file is the entry point for any new session.
+
+```
+# Slate 2024-01-15
+
+## Active
+- T-auth-middleware: Rewrite auth middleware  [in_progress]
+- T-auth-tests: Integration test suite  [pending]
+
+## Done today
+- ~~T-token-leak~~ ✓  Token leak in /refresh
+
+## Notes
+- 09:42 — deadline-context: compliance deadline end of month — drove scope decision on auth
+
+## Tools
+...
+```
+
+---
+
+## Closed Tickets
+
+Closed tickets don't accumulate in the daily slate — they go to a separate blob:
+
+```
+~/.channel/closed_tickets.txt
+```
+
+Format: newest at top — `YYYY-MM-DD | T-id | description`
+
+Tail from the top until satisfied. The daily slate stays clean.
+
+---
+
+## What a Ticket Contains
+
+```python
+{
+  "id": "T-auth-middleware",
+  "title": "Rewrite auth middleware",
+  "description": "...",
+  "size": "M",
+  "priority": 1,
+  "status": "in_progress",
+  "github_issue": 47,           # GitHub issue number, linked at creation
+  "required_files": [...],      # pre-declared for sprint context loading
+  "related_to": [...]           # links tickets sharing context
+}
+```
+
+**`github_issue`**: every ticket links to a GitHub issue. The local queue is the work-state
+source of truth; GitHub is the cloud backup. If the local drive dies, GitHub is what survives.
 
 ---
 
 ## Daily Flow
 
 ```
-Morning:
-  /context-load                    → reads slate, starts session record
-  slate_manager.py show            → confirm what's on today
+Start of day:
+  /context-load       → creates today's dated slate if missing; reads it; starts session record
 
 During work:
-  /sprint T-auth-middleware        → claims ticket, works it
-  /decided                         → records decision, appends to session
-  slate_manager.py close-ticket T-auth-middleware
-  slate_manager.py render          → updates slate.md
+  /sprint T-auth-middleware    → claims ticket, works it
+  /decided                     → records decision; today's D-numbers appear in the slate
+  /notethat                    → bookmarks an idea; headline appended to today's slate
+  cc_queue.py done T-id "..."  → closes ticket; prepends line to closed_tickets.txt
 
 End of day:
-  /day-close                       → syncs docs, posts GitHub update, commits
-  slate_manager.py advance         → closes slate 0, shifts everything down
+  /day-close          → syncs docs DB, creates new GitHub Discussion for today's record,
+                        creates GitHub Issues for any tickets missing github_issue number,
+                        commits docs
 ```
 
 ---
 
-## Bugs Mid-Slate
+## Notes Mid-Slate
 
-When something unexpected surfaces during a slate:
-```bash
-CC_DB_URL=... python3 claudecode/slate_manager.py add-ticket 0 "bug-xyz" "describe the bug" --bug
+Use `/notethat` to capture ideas, insights, or conversation fragments that shouldn't be lost:
+
+```
+/notethat
 ```
 
-The `--bug` flag marks it as `adopted_bug` type — visible in the slate but distinct from primary tickets.
-This keeps the slate honest about what was planned vs. what reality injected.
+Full note lands in `~/.channel/notes/YYYY-MM-DD_<slug>.md`.
+One-liner headline appended to today's slate so context-load picks it up next session.
+
+For structured design decisions, use `/decided` instead — that's for architectural choices with D-numbers.
 
 ---
 
-## Why Not Just Use GitHub Issues?
+## GitHub: Push, Not Pull
 
-GitHub issues are the upstream source — `github_sync.py` pulls them into Postgres on sync.
-But GitHub doesn't know:
-- Which issues are *today's* work vs. next week's
-- Which bugs were absorbed mid-slate
-- The *done_when* criterion for the current batch
-- The horizon cascade (today → next → after)
+Local cc_queue is canonical for work state. GitHub Issues are the durable backup:
 
-The slate adds that organizational layer on top.
-GitHub is the canonical issue tracker; the slate is the daily work plan.
+- Every ticket carries a `github_issue` field (GitHub issue number)
+- GitHub issue titles include the cc_queue slug: `T-auth-middleware: Rewrite auth middleware`
+- `/day-close` creates GitHub Issues for any ticket missing `github_issue`
+- Each day gets its own GitHub Discussion (not a comment on the master plan thread)
+
+The master plan thread is for roadmap and architecture. Daily Discussions are the daily record.
 
 ---
 
 ## Multiple Sessions, One Slate
 
 When running multiple Claude Code tabs simultaneously:
-- All tabs read the same `slate.md` (rendered from Postgres)
-- When a ticket is claimed, mark it in_progress via `cc_queue.py start`
+- All tabs read the same dated slate file
+- When a ticket is claimed, mark it in_progress via `cc_queue.py claim`
 - Other tabs see it as in_progress and don't touch it
 - Channel posts show who is working on what
 

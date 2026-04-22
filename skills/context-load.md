@@ -6,6 +6,17 @@ No Igor required. No Postgres required.
 
 ---
 
+## Step 0 — Stale slate check (soft prompt)
+
+Before today's slate, check whether the most-recent prior-day slate was closed.
+If it has open items (non-empty Next up / Blocked / After that sections) and lacks
+a `✅ CLOSED` marker, surface the stale date so the user can choose to `/day-close`
+it before starting new work. Silent when prior slate is fully closed or empty.
+
+This is a soft prompt, not a gate — carry-forward should be a deliberate decision,
+not silent. The detection is trivial because slates are dated files (`YYYYMMDD.slate.txt`),
+so "stale" = any slate older than today.
+
 ## Step 1 — Read the slate
 
 ```bash

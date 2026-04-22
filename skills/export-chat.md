@@ -16,12 +16,12 @@ Run the helper script (default target is the most-recently-modified transcript �
 python3 /home/akien/TheIgors/lab/claudecode/export_chat.py
 ```
 
-Output: `/home/akien/TheIgors/claude_chat_logs/YYYY-MM-DD.md`. Overwrites today's file; appends with a separator if the same day already has content from a different session.
+Output: `YYYY-MM-DD.md` per calendar day. Each message is routed to the day-file matching its own timestamp, so long-lived sessions that span midnight contribute to multiple day-files. Each day-file is rebuilt as the union of every session's contribution for that date — re-running the export produces identical output (idempotent by construction).
 
 ## Flags
 
-- `--session <session-id>` — render a specific session by id (the UUID filename minus `.jsonl`).
-- `--all` — render every transcript in `~/.claude/projects/-home-akien-TheIgors/*.jsonl`, each to its corresponding day's file. Idempotent — running multiple times just appends separators.
+- `--session <session-id>` — scope the refresh to the day-files touched by a specific session (the UUID filename minus `.jsonl`). Union with other sessions' content for those days is preserved.
+- `--all` — rebuild every day-file from the full transcript directory. Idempotent.
 - `--dry-run` — print what would be written, don't touch disk.
 
 ## What it renders

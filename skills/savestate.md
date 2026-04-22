@@ -43,7 +43,7 @@ Note: individual decisions are flushed by Step 2 (decision_manager.py add handle
 For each new decision made this session, run:
 
 ```bash
-IGOR_HOME_DB_URL=postgresql://igor:choose_a_password@127.0.0.1/igor_wild_0001 \
+IGOR_HOME_DB_URL=postgresql://igor:choose_a_password@127.0.0.1/Igor-wild-0001 \
   python3 ~/TheIgors/claudecode/decision_manager.py add Dxxx "short-name" "status" "one-line description"
 ```
 
@@ -58,7 +58,7 @@ This is the only step that needs judgment. The session record already has decisi
 from /decided calls. Add the two synthesis fields:
 
 ```bash
-DB=postgresql://igor:choose_a_password@127.0.0.1/igor_wild_0001
+DB=postgresql://igor:choose_a_password@127.0.0.1/Igor-wild-0001
 IGOR_HOME_DB_URL=$DB python3 ~/TheIgors/claudecode/session_manager.py finalize "YYYY-MM-DDx" \
   "Next session: top 2-3 priorities" \
   "In-flight hypothesis or NONE"
