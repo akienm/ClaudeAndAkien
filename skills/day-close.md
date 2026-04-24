@@ -136,7 +136,7 @@ git pull --rebase origin main && git push origin main
 
 ## Hard rules
 
-- Never commit source code here — docs only
-- Never rewrite DSB files from scratch — update in place
-- Never add speculative gaps — only things that actually happened
-- Skip steps that have nothing to update — don't add noise
+- Always commit docs only — source code commits belong in /sprint.
+- Always update DSB files in place — never rewrite from scratch.
+- Always add only gaps that actually happened — no speculative entries.
+- Always skip steps with nothing to update — no noise.

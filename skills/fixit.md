@@ -67,10 +67,10 @@ Commits: <hash1>, <hash2>, ...
 
 ## Hard rules
 
-- Never skip /review — even in the fast path, filing-time quality gate applies.
-- Never bypass HIGH-inertia approval — the inline prompt fires even during /fixit; Akien pre-approves and the stamp lands in the ticket body.
-- Never sprint past a gated ticket — /sprint-batch filters gated tickets; a ticket gated by /review (e.g. "needs pre-approval") must clear its gate before sprinting.
-- Never combine tickets from different decisions — if /decided during /fixit produces multiple distinct decisions, each gets its own D- id; /sprint-batch scopes to just the current /fixit invocation's decision id.
+- Always run /review — filing-time quality gate applies even in the fast path.
+- Always surface HIGH-inertia pre-approval inline; the stamp lands in the ticket body before filing.
+- /sprint-batch always respects gates — a ticket gated on pre-approval clears the gate first.
+- Every distinct decision gets its own D-id; /sprint-batch always scopes to the current /fixit invocation's decision id.
 
 ## Related
 

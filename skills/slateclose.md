@@ -63,6 +63,6 @@ If more slates are planned today: skip.
 
 ## Hard rules
 
-- Never delete archived slates — they're the record
-- Always post to GitHub before clearing slate.md
-- Carried tickets stay in queue as in_progress — do not close them
+- Always preserve archived slates — they're the record.
+- Always post to GitHub before clearing slate.md.
+- Always leave carried tickets in queue as in_progress — never close them just because the day turned over.

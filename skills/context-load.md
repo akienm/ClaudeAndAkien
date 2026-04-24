@@ -19,6 +19,7 @@ so "stale" = any slate older than today.
 
 ## Step 1 — Read the slate
 
+Always read the slate first — it's the session-kickoff anchor:
 ```bash
 cat ~/.channel/slate.md
 ```
@@ -32,7 +33,7 @@ The slate tells you:
 
 ## Step 2 — Read blob tops
 
-For each blob listed in the slate, read the top 40 lines only:
+For each blob listed in the slate, always read only the top 40 lines:
 
 ```bash
 head -40 <blob-path>
@@ -99,6 +100,6 @@ This creates a partial record AND writes `~/.channel/current_session.txt`. Crash
 
 ## Hard rules
 
-- Never read more than 40 lines of any blob — if you need more, something is wrong with the blob
-- Never load CLAUDE.md as your primary context — slate + blob tops replace it
-- If slate is missing: fall back to MEMORY.md + decisions top + channel read
+- Always stop at 40 lines per blob — when you need more, something is wrong with the blob.
+- Always use slate + blob tops as primary context — CLAUDE.md is a bootstrap shim, not the map.
+- When the slate is missing, always fall back to MEMORY.md + decisions top + channel read.

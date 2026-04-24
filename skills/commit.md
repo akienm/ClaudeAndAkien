@@ -89,8 +89,8 @@ If pull has conflicts: resolve them, then push. If force-push would be needed: *
 
 ## Hard rules
 
-- Never `--no-verify`
-- Never force-push main
-- Never stage `.env`, `*.db`, or `~/.TheIgors/` files
-- Never commit source code changes as part of savestate
+- Always let pre-commit hooks run — never use `--no-verify`.
+- Always push non-force to main.
+- Always stage files by name — runtime state (`.env`, `*.db`, paths under `~/.TheIgors/`) stays out automatically.
+- Always commit source code as part of /sprint, not /savestate.
 - Always read the diff before committing — no surprises

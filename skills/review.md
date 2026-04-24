@@ -86,11 +86,11 @@ Suggestions: <non-blocking improvements>
 
 ## Hard rules
 
-- Must-fix items block the sprint / filing. Do not proceed until resolved.
-- If Akien overrides a must-fix: record it and proceed (the override becomes training data for /review self-learning).
-- Don't review your own work as "PASS" by default — actually look.
-- Filing-time /review runs in seconds (Haiku-shaped checklist work). Standalone /review on a complex plan can escalate to Sonnet reasoning if needed.
-- Log every invocation to the review log file so T-review-self-learning can later read it.
+- Always actually look. "PASS" is a verdict earned by checking, not a default.
+- Must-fix items always block sprint/filing until resolved.
+- Always record Akien overrides on must-fix items — the override record is training data for the self-learning loop.
+- Filing-time /review runs in seconds (Haiku-shaped checklist work). Standalone /review on a complex plan escalates to Sonnet reasoning when needed.
+- Always log every invocation to the review log file — feeds T-review-self-learning later.
 
 ## Related
 

@@ -90,9 +90,9 @@ This is the input string for `/compact`. Copy it exactly.
 
 ---
 
-## What NOT to do
+## Hard rules
 
-- Do not rewrite DSB files from scratch — update in place
-- Do not re-read files already read this session
-- Do not add speculative plans to gap_analysis — only things that happened or were decided
-- Do not commit source code as part of savestate — that should already be committed
+- Always update DSB files in place — never rewrite from scratch.
+- Always skip files already read this session — context is already there.
+- Always add only gaps that happened or were decided — no speculative entries.
+- Always commit source code during /sprint, not during /savestate.

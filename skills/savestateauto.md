@@ -11,7 +11,7 @@ Since 2026-04-20: the final step always emits a compact-ready preserve string. A
 
 ## Steps
 
-1. **State hypothesis**: One sentence — what's in-flight and why? NONE if clean.
+1. **State hypothesis**: Always write one sentence naming what's in-flight and why. Use NONE when the session is clean — the slate says something either way.
 
 2. **Flush to Igor** (non-fatal):
    ```bash

@@ -112,10 +112,10 @@ At start of day:
 
 ## Hard rules
 
-- Never skip the shared setup — venv activation + env var export are cheap and prevent per-ticket drift.
-- Never skip tests — `pytest -x -q` runs per ticket; failure stops that ticket (prompt to skip/abort).
-- Never merge ticket commits — one commit per ticket is load-bearing for decision-rollup (which needs per-ticket close events).
-- Never ignore cycle errors — topo cycles mean the dependency graph is wrong; get Akien's call.
+- Shared setup (venv activation + env var export) always runs once per batch — cheap, prevents per-ticket drift.
+- Always run tests per-ticket with `pytest -x -q`; failure stops that ticket and prompts skip/abort.
+- Always commit per ticket — load-bearing for decision-rollup, which needs per-ticket close events.
+- Topo cycles always surface as a dependency-graph bug — bail with the cycle printed and get Akien's call.
 
 ## Related
 

@@ -64,7 +64,7 @@ For each implementation unit the decision implies, draft a ticket:
 
 ### 4. Run /review on each draft (filing-time mode)
 
-For each drafted ticket, invoke /review. If /review returns:
+Always invoke /review once per drafted ticket — filing-time quality is the whole point of /decided. /review returns one of:
 - **PASS** → proceed to filing.
 - **AMEND** → apply the amendments (or ask Akien if ambiguous), re-submit to /review.
 - **SPLIT** → replace the single draft with N child drafts; run /review on each.
@@ -161,7 +161,7 @@ Or, with multiple decisions in one session:
 
 ## Hard rules
 
-- Never skip /review. The whole point is filing-time quality.
-- Never file a ticket that /review returned DISCARD on without explicit Akien override.
-- Never merge multiple decisions into one D-id just because they came in one session — each decision is its own scope.
-- Never edit a decision node after filing — decisions are append-only. New context becomes a new decision, linked via metadata.
+- Always run /review on every drafted ticket — filing-time quality is the whole point.
+- Always treat a /review DISCARD as blocking — file only with explicit Akien override.
+- Always give each distinct decision its own D-id. One session can hold many decisions.
+- Always treat decisions as append-only. New context becomes a new decision, linked via metadata.

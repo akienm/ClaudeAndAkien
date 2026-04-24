@@ -24,7 +24,7 @@ Do this before anything else. It is instant and silent.
 
 ## Step 1 — Load context
 
-Run `/context-load` first. Get the briefing. Confirm session record is started in DB.
+Always run `/context-load` first. Get the briefing. Confirm the session record is started in DB.
 
 ---
 
@@ -56,11 +56,11 @@ CC_DB_URL=$CC_DB_URL python3 $PROJECT_ROOT/claudecode/session_manager.py append-
 
 ## Step 3 — Work the ticket
 
-Follow workstep discipline (see /workstep). Key gates:
-- S/M size: implement directly after reading relevant files
-- L size: post plan to channel first, wait for Akien approval before coding
-- Read every file before editing
-- Forensic logging for non-trivial changes
+Always follow workstep discipline (see /workstep). Key gates:
+- S/M size: implement directly after reading the relevant files.
+- L size: always post the plan to channel first, then wait for Akien approval before coding.
+- Always read every file before editing it.
+- Always add forensic logging on non-trivial changes.
 
 Post progress updates to channel:
 ```bash
@@ -111,8 +111,8 @@ Post next ticket to channel so Akien or another session can pick it up. Then eit
 
 ## Hard rules
 
-- One ticket per sprint — no scope creep
-- L-size tickets: plan approval required before any code
-- Never claim a ticket already marked in_progress by another session
-- Always post to channel at start, on progress, and on completion
-- Run /decided after each ticket — decisions must land in DB before session ends
+- Always sprint one ticket at a time — no scope creep.
+- Always get plan approval before coding an L-size ticket.
+- Always check the in_progress flag before claiming — another session may already hold it.
+- Always post to channel at start, on progress, and on completion.
+- Always run /decided after each ticket — decisions land in DB before session ends.

@@ -100,6 +100,6 @@ These can be run anytime as regression checks:
 
 ## Hard rules
 
-- Never force a specific response — stimulus must be natural language Igor would receive normally
-- If Igor is mid-conversation, wait for idle before injecting
-- Probe result goes in the session record via `/decided` notes — not a separate commit
+- Always shape stimulus as natural language Igor would receive normally — don't pre-wire a specific response.
+- Always wait for idle before injecting when Igor is mid-conversation.
+- Always record the probe result via `/decided` notes in the session record — not as a separate commit.
